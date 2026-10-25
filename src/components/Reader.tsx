@@ -85,6 +85,9 @@ export default function Reader() {
   const undoStackRef = useRef(undoStack);
   const undoingRef = useRef<number | null>(null);
   const pendingRef = useRef(pendingIds);
+  const initialLoadCompleteRef = useRef(false);
+  const returnSyncActiveRef = useRef(false);
+  const lastReturnSyncAtRef = useRef(0);
   undoStackRef.current = undoStack;
   pendingRef.current = pendingIds;
 
@@ -108,13 +111,15 @@ export default function Reader() {
   }, []);
 
   const refresh = useCallback(async () => {
-    if (refreshCount.current > 0) return;
+    if (refreshCount.current > 0) return false;
     refreshCount.current += 1;
     setRefreshing(true);
     setError("");
+    let succeeded = false;
     try {
       await request<{ refreshed: number; failed: number; skipped: number }>("/api/refresh", { method: "POST" });
       await fetchInbox(true);
+      succeeded = true;
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "Could not refresh your feeds.";
       setError(message);
@@ -122,6 +127,7 @@ export default function Reader() {
       refreshCount.current -= 1;
       setRefreshing(false);
     }
+    return succeeded;
   }, [fetchInbox]);
 
   useEffect(() => {
@@ -130,6 +136,7 @@ export default function Reader() {
       try { await fetchInbox(); }
       catch (cause) { if (mounted) setError(cause instanceof Error ? cause.message : "Could not load your feeds."); }
       if (mounted) {
+        initialLoadCompleteRef.current = true;
         setLoading(false);
         void refresh();
       }
@@ -137,6 +144,35 @@ export default function Reader() {
     void initialize();
     return () => { mounted = false; };
   }, [fetchInbox, refresh]);
+
+  const syncOnReturn = useCallback(() => {
+    if (document.visibilityState !== "visible" || !initialLoadCompleteRef.current || returnSyncActiveRef.current) return;
+    const now = Date.now();
+    if (now - lastReturnSyncAtRef.current < 1000) return;
+    lastReturnSyncAtRef.current = now;
+    returnSyncActiveRef.current = true;
+    void (async () => {
+      let inboxError = "";
+      try { await fetchInbox(true); }
+      catch (cause) { inboxError = cause instanceof Error ? cause.message : "Could not reload your inbox."; }
+      const anotherRefreshWasActive = refreshCount.current > 0;
+      const refreshed = await refresh();
+      if (inboxError && !anotherRefreshWasActive && !refreshed) setError(inboxError);
+      returnSyncActiveRef.current = false;
+    })();
+  }, [fetchInbox, refresh]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") syncOnReturn();
+    };
+    window.addEventListener("focus", syncOnReturn);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener("focus", syncOnReturn);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [syncOnReturn]);
 
   useEffect(() => {
     if (settingsOpen || helpOpen) {

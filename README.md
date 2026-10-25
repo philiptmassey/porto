@@ -31,7 +31,7 @@ Run `npm run dev`. If port 3000 is occupied, use `npm run dev -- --port 3001` an
 
 Connect this repository to a Vercel Next.js project using Node.js 24, then configure the variables above in that project's Production environment. Keep the server key and cron secret encrypted and server-only. Preview deployments intentionally receive no production credentials.
 
-The app refreshes on opening and on request, with a five-minute minimum interval per source. The server claims sources atomically and fetches at most ten at a time. An interrupted refresh releases its lease after ten minutes. Refresh routes allow up to 300 seconds.
+The app refreshes on opening, when returning to its tab or browser window, and on request, with a five-minute minimum interval per source. Returning first reloads saved inbox state, then checks for feed updates without resetting filters or pending read actions. The server claims sources atomically and fetches at most ten at a time. An interrupted refresh releases its lease after ten minutes. Refresh routes allow up to 300 seconds.
 
 For collection while the app is closed, use Supabase Cron to invoke `/api/cron/refresh` every 15 minutes. `supabase/schedule.sql` contains the repeatable setup. Before running it, create the `porto_origin` and `porto_cron_secret` entries in Supabase Vault; the secret must match Vercel's `CRON_SECRET`. Do not place actual values in the repository. This uses Supabase's scheduler so frequent polling does not depend on a paid Vercel Cron plan. Check job outcomes through Supabase Cron and the temporary `net._http_response` log.
 
