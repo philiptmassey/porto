@@ -23,7 +23,7 @@ Use Node.js 24 or newer, then run `npm ci`. Copy `.env.example` to `.env.local` 
 | `NEXT_PUBLIC_APP_URL` | Exact application origin, such as `http://localhost:3000` |
 | `CRON_SECRET` | Random secret protecting the background refresh endpoint |
 
-Apply the SQL in `supabase/migrations/20261024215242_initial_reader.sql` once to the dedicated Supabase database. Create the owner in Supabase Auth with the same email as `OWNER_EMAIL`. Add the application's exact `/auth/callback` URL to the Supabase Auth redirect allowlist and set its Site URL to the application origin. The built-in sign-in form sends a passwordless link; open that link in the same browser that requested it.
+Apply the SQL in `supabase/migrations/20261024215242_initial_reader.sql` once to the dedicated Supabase database. Create the owner in Supabase Auth with the same email as `OWNER_EMAIL`. Add the application's exact `/auth/finish` URL to the Supabase Auth redirect allowlist and set its Site URL to the production application origin. The built-in sign-in form uses Supabase's default email template and sends a passwordless link that can be opened in any browser. Supabase verifies the one-time link and returns the session through a URL fragment; the finish page immediately clears the fragment, validates and persists the session in cookies, and checks server-side owner authorization before opening the inbox. The `/auth/callback` route also supports earlier PKCE links.
 
 Run `npm run dev`. If port 3000 is occupied, use `npm run dev -- --port 3001` and update both `NEXT_PUBLIC_APP_URL` and the Supabase callback allowlist to match. Link the intended Vercel project before working against shared resources. Keep `.env.local`, `.vercel/`, and the OPML export out of Git.
 

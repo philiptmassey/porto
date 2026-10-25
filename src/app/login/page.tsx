@@ -15,7 +15,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
       <p className={styles.eyebrow}>A quieter place to catch up</p>
       <h1>Read what matters.<br />Then get on with your day.</h1>
       <p className={styles.description}>Your feeds, one small inbox. Open a story or clear it away.</p>
-      {params.sent ? <div role="status" className={styles.notice}><strong>Check your email.</strong><p>Your sign-in link is on its way. Open it in this browser to continue.</p><Link href="/login">Back to sign in</Link></div> :
+      {params.sent ? <div role="status" className={styles.notice}><strong>Check your email.</strong><p>Open the newest sign-in link in the browser where you want to read. The link signs you into that browser.</p><Link href="/login">Send a new link</Link></div> :
         <form action={signIn}>
           <label htmlFor="email">Email address</label>
           <input type="email" name="email" id="email" autoComplete="email" placeholder="you@example.com" required />
